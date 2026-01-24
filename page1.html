@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NexusHub Gaming Site - Fade Slider</title>
+    
+    <style>
+        /* ===================================== */
+        /* 1. GLOBAL STYLES & DARK THEME SETUP   */
+        /* ===================================== */
+        html, body1 {
+            height: 100%;
+            overflow-y:scroll ; /* Prevents unwanted scrollbars for the fullscreen slider */
+        }
+        
+        body1 {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0d1117; 
+            color: #ffffff; 
+            line-height: 1.6;
+            padding-top: 60px; /* Space for the fixed nav bar */
+        }
+
+        /* ===================================== */
+        /* 2. NAVIGATION BAR STYLES (Omitted for brevity) */
+        /* ===================================== */
+        .main-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            height: 60px;
+            background-color: rgba(13, 17, 23, 0.95); 
+            z-index: 1000;
+            padding: 0 20px;
+            box-sizing: border-box;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+        }
+        
+        .logo-group {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo-group h2 {
+            margin: 0 0 0 10px;
+            font-size: 1.5em;
+        }
+
+        /* Desktop Navigation Links */
+        .nav-links ul {
+            list-style: none;
+            display: flex;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .nav-links li {
+            margin: 0 15px;
+        }
+        
+        .nav-links a {
+            text-decoration: none;
+            color: #ffffff;
+            position: relative;
+            display: inline-block;
+            padding: 5px 0;
+            transition: color 0.3s;
+        }
+        
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 0;
+            height: 2px;
+            background-color: aquamarine;
+            transition: width 0.5s ease-in-out;
+        }
+        
+        .nav-links a:hover {
+            color: aquamarine;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        /* Search Form */
+        .search-form {
+            display: flex;
+            align-items: center;
+            background-color: #21262d; 
+            border-radius: 20px;
+            padding: 0 5px;
+            border: 1px solid #444;
+        }
+
+        .search-input {
+            padding: 8px 10px;
+            border: none;
+            background-color: transparent;
+            color: white;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .search-button {
+            background-color: transparent;
+            color: aquamarine; 
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            font-size: 1.2em;
+        }
+        
+        /* Menu Toggle Button */
+        .menu-toggle {
+            display: none; 
+            background: none;
+            border: none;
+            color: aquamarine;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px;
+            transition: transform 0.3s;
+        }
+        
+        .menu-toggle.open {
+            transform: rotate(180deg);
+        }
+
+        /* ===================================== */
+        /* 3. FADE SLIDER STYLES (NEW)           */
+        /* ===================================== */
+        
+        #slider-container {
+            /* Full screen height minus the fixed nav bar */
+            height: calc(100vh - 60px); 
+            width: 100vw;
+            position: relative; /* All slides will be positioned relative to this */
+        }
+        
+        /* Style for the individual slides */
+        .slide { 
+            position: absolute; /* Stack slides on top of each other */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0; /* Hidden by default */
+            transition: opacity 1s ease-in-out; /* Smooth fade effect */
+            overflow: hidden;
+            pointer-events: none; /* Allows clicks to fall through to the active slide */
+        }
+        
+        /* Active state for the currently visible slide */
+        .slide.active {
+            opacity: 1;
+            pointer-events: auto; /* Re-enable pointer events for active slide */
+        }
+
+        /* Image styling */
+        .slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1; 
+        }
+        
+        /* Content positioning */
+        .slide .content {
+            position: relative;
+            z-index: 10;
+            padding: 0 10%; /* Use percentage for better responsiveness */
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.3); /* Slight overlay to make text readable */
+        }
+        
+        /* FADE-IN/OUT FOR TEXT & BUTTONS (NEW) */
+        
+        /* Initial state for content when slide is NOT active */
+        .slide > .content > * {
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+        }
+        
+        /* Final state for content when slide IS active */
+        .slide.active > .content > * {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* Delay utility classes for staggered animation */
+        .slide.active .subtitle { transition-delay: 0.1s; }
+        .slide.active .title { transition-delay: 0.3s; }
+        .slide.active .description { transition-delay: 0.5s; }
+        .slide.active .actions .btn { transition-delay: 0.7s; }
+
+
+        /* Typography and Neon Effect (Minor adjustments) */
+        .subtitle {
+            font-size: 1em;
+            color: #4CAF50;
+            letter-spacing: 4px;
+            font-weight: 500;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+        
+        .title {
+            font-size: 4.8em; 
+            font-weight: 900;
+            text-transform: uppercase;
+            margin: 10px 0 20px 0;
+            color: #fff;
+            text-shadow: 
+                0 0 7px #fff, 
+                0 0 10px #fff, 
+                0 0 21px #007bff, 
+                0 0 42px #007bff, 
+                0 0 82px #007bff, 
+                0 0 92px #007bff;
+        }
+
+        .description {
+            font-size: 1.2em;
+            color: #ccc;
+            margin-bottom: 40px;
+            max-width: 600px;
+        }
+
+        /* Button Styles */
+        .actions {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .btn {
+            padding: 14px 35px;
+            border: none;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-weight: 700;
+            font-size: 1em;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        
+        .btn.primary {
+            background-color: #ff3366; 
+            color: #ffffff;
+        }
+        
+        .btn.primary:hover {
+            background-color: #ff5e85;
+            box-shadow: 0 0 20px #ff3366;
+        }
+        
+        .btn.secondary {
+            background-color: transparent;
+            border: 2px solid #ff3366;
+            color: #ff3366;
+        }
+
+        .btn.secondary:hover {
+            background-color: #ff3366;
+            color: #ffffff;
+        }
+        
+        /* ===================================== */
+        /* 4. MOBILE/TABLET RESPONSIVENESS (<= 768px) */
+        /* ===================================== */
+        @media (max-width: 1000px) {
+            
+            /* Adjust Hero Title size for mobile */
+            .title {
+                font-size: 3em;
+            }
+
+            /* Stack buttons vertically if needed */
+            .actions {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .search-form{
+                width: 100px;
+            }
+            .search-button{
+                font-size: 20px;
+                margin-left: -15vw;
+            }
+             #slider-container {
+            /* Full screen height minus the fixed nav bar */
+            height: calc(150vh - 60px); 
+            width: 100vw;
+            position: relative; /* All slides will be positioned relative to this */
+        }
+        .viewgames{
+            margin-left: 70vw;
+        }
+        .cont3{
+            margin-top: 50vh;
+        }
+        }
+    </style>
+</head>
+
+<body1>
+    <nav class="main-nav">
+        <div class="logo-group">
+            <img 
+                src="https://www.shutterstock.com/image-vector/game-logo-design-template-stick-260nw-1041729031.jpg" 
+                alt="NexusHub Logo" 
+                style="width: 50px; height: 50px; border-radius: 50%;"
+            > 
+            <h2>NEXUSHUB</h2>
+        </div>
+        
+        <button class="menu-toggle" aria-expanded="false" aria-controls="nav-links">
+            &#9660; </button>
+
+        <form class="search-form" action="/search" method="get">
+            <input 
+                type="text" 
+                class="search-input" 
+                placeholder="Search" 
+                aria-label="Search query" 
+                name="q"
+            >
+            <button type="submit" class="search-button"> &rarr;</button>
+        </form>
+        
+        <div class="nav-links" id="nav-links">
+            <ul>
+                <li><a href="#">Home</a></li>
+                <li><a href="#">Games</a></li>
+                <li><a href="#">News</a></li>
+                <li><a href="#">Esports</a></li>
+                <li><a href="#">Community</a></li>
+                <li><a href="#">Store</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div id="slider-container">
+        
+        <div class="slide active" id="slide-1">
+            <img src="https://www.rollingstone.com/wp-content/uploads/2024/05/summer-games-frostpunk-2.jpg?w=1024" alt="Frostpunk 2 Game Art">
+            <div class="content">
+                <p class="subtitle">SPEED HAS NO LIMIT</p>
+                <h1 class="title">NEON RACER X</h1>
+                <p class="description">High-octane anti-gravity racing on futuristic tracks. Customize your vehicle and compete in the global championship.</p>
+                <div class="actions">
+                    <button class="btn primary">PLAY NOW</button>
+                    <button class="btn secondary">WATCH TRAILER</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="slide" id="slide-2">
+            <img src="https://www.rollingstone.com/wp-content/uploads/2024/05/games-of-the-summer-lead-star-wars.jpg?w=1581&h=1054&crop=1" alt="Star Wars Game Art">
+            <div class="content">
+                <p class="subtitle">EXPLORE THE UNKNOWN</p>
+                <h1 class="title">STELLAR VOYAGER</h1>
+                <p class="description">Command your fleet across procedurally generated Galaxies. Trade, fight, and survive in the infinite darkness of space.</p>
+                <div class="actions">
+                    <button class="btn primary">PLAY NOW</button>
+                    <button class="btn secondary">WATCH TRAILER</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="slide" id="slide-3">
+            <img src="https://www.rollingstone.com/wp-content/uploads/2024/05/summer-games-star-wars.jpg?w=1024" alt="Cyber Odyssey Game Art">
+            <div class="content">
+                <p class="subtitle">THE FUTURE IS NOW</p>
+                <h1 class="title">CYBER ODESSEY 2077</h1>
+                <p class="description">Immerse yourself in a sprawling metropolis where technology and humanity collide. Master cybernetic enhancements and shape your destiny.</p>
+                <div class="actions">
+                    <button class="btn primary">PLAY NOW</button>
+                    <button class="btn secondary">WATCH TRAILER</button>
+                </div>
+            </div>
+        </div>
+        
+    </div> <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // --- Mobile Nav Toggle Logic ---
+            const menuToggle = document.querySelector('.menu-toggle');
+            const navLinks = document.getElementById('nav-links');
+
+            if (menuToggle && navLinks) {
+                menuToggle.addEventListener('click', () => {
+                    navLinks.classList.toggle('open');
+                    menuToggle.classList.toggle('open');
+                    const isExpanded = navLinks.classList.contains('open');
+                    menuToggle.setAttribute('aria-expanded', isExpanded);
+                });
+            }
+            
+            // --- Auto-Fade Logic (New Implementation) ---
+            const slides = document.querySelectorAll('.slide');
+            const slideCount = slides.length;
+            let currentSlideIndex = 0;
+            const slideDuration = 5000; // 5 seconds as requested
+
+            function nextSlide() {
+                // 1. Get the current active slide element
+                const currentSlide = slides[currentSlideIndex];
+                
+                // 2. Remove the active class from the current slide (fades out)
+                currentSlide.classList.remove('active');
+
+                // 3. Calculate the index of the next slide
+                currentSlideIndex = (currentSlideIndex + 1) % slideCount;
+                
+                // 4. Get the next slide element
+                const nextSlide = slides[currentSlideIndex];
+
+                // 5. Add the active class to the next slide (fades in, triggers content fade)
+                nextSlide.classList.add('active');
+            }
+
+            // Start the auto-fade timer
+            const autoFadeTimer = setInterval(nextSlide, slideDuration);
+            
+            // Optional: Clear the interval on user interaction if needed
+            // document.getElementById('slider-container').addEventListener('click', () => {
+            //     clearInterval(autoFadeTimer);
+            // });
+        });
+    </script>
+</body1>
+</html>
+
+
+<body class="scndbody" style="background-color: black; overflow-x: hidden;">
+    <div class="cont1">
+        <p class="trending">TRENDING</p>
+        <p class="viewgames">View Games</p>
+    </div>
+
+    <div class="cont2">
+        <div class="cont21" style="background-color: ;">
+            <img src="https://images.pexels.com/photos/5767676/pexels-photo-5767676.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1" alt="" >
+            <button type="button" class="racing">RACING</button>
+            <div class="write">
+                <p style="margin-left: 15px;">Cyber Odyssey</p> 
+                <p style="margin-left: 15px;"><span style="color: yellow; font-size: 20px;">&#9733;</span> 4.8/5</p>
+            </div>
+        </div>
+
+        <div class="cont21" style="background-color: ;">
+            <img src="https://img.freepik.com/premium-photo/high-angle-view-gun-with-blood-wooden-table_1048944-18878299.jpg" alt="">
+            <button type="button" class="racing">RPG</button>
+            <div class="write">
+                <p style="margin-left: 15px;">Cabin Fever</p> 
+                <p style="margin-left: 15px;"><span style="color: yellow; font-size: 20px;">&#9733;</span> 4.5/5</p>
+            </div>
+        </div>
+
+        <div class="cont21" style="background-color: ;">
+            <img src="https://www.shutterstock.com/shutterstock/videos/1104029859/thumb/12.jpg?ip=x480" alt="">
+            <button type="button" class="racing">STRATEGY</button>
+            <div class="write">
+                <p style="margin-left: 15px;">Chess</p> 
+                <p style="margin-left: 15px;"><span style="color: yellow; font-size: 20px;">&#9733;</span> 4.8/5</p>
+            </div>
+        </div>
+
+        <div class="cont21" style="background-color: ;">
+            <img src="https://sm.ign.com/ign_in/feature/t/the-10-bes/the-10-best-stealth-games_cbc9.jpg" alt="">
+            <button type="button" class="racing">STEALTH</button>
+            <div class="write">
+                <p style="margin-left: 15px;">Counter Balance</p> 
+                <p style="margin-left: 15px;"><span style="color: yellow; font-size: 20px;">&#9733;</span> 4.8/5</p>
+            </div>
+        </div>
+
+        <div class="cont21" style="background-color: ;">
+            <img src="https://img.freepik.com/free-photo/black-white-portrait-athlete-competing-paralympics-championship-games_23-2151492726.jpg?semt=ais_hybrid&w=740&q=80" alt="">
+            <button type="button" class="racing">SPORT</button>
+            <div class="write">
+                <p style="margin-left: 15px;">Rugby</p> 
+                <p style="margin-left: 15px;"><span style="color: yellow; font-size: 20px;">&#9733;</span> 4.8/5</p>
+            </div>
+        </div>
+
+        <div class="cont21" style="background-color: ;">
+            <img src="https://d1vzi28wh99zvq.cloudfront.net/images/18374/449021.jpg" alt="">
+            <button type="button" class="racing">RPG</button>
+            <div class="write">
+                <p style="margin-left: 15px;">Stella Voyager</p> 
+                <p style="margin-left: 15px;"><span style="color: yellow; font-size: 20px;">&#9733;</span> 4.8/5</p>
+            </div>
+        </div>
+
+        <div class="cont21" style="background-color: ;">
+            <img src="https://cdn2.unrealengine.com/racing-master-img-1-1920x1080-e5d0a6bbc96f.jpg?resize=1&w=1920" alt="">
+            <button type="button" class="racing">RACING</button>
+            <div class="write">
+                <p style="margin-left: 15px;">Asphalt</p> 
+                <p style="margin-left: 15px;"><span style="color: yellow; font-size: 20px;">&#9733;</span> 4.3/5</p>
+            </div>
+        </div>
+
+        <div class="cont21" style="background-color: ;">
+            <img src="https://www.shutterstock.com/shutterstock/videos/3921699125/thumb/1.jpg?ip=x480" alt="">
+            <button type="button" class="racing">FOCUS</button>
+            <div class="write">
+                <p style="margin-left: 15px;">Athena</p> 
+                <p style="margin-left: 15px;"><span style="color: yellow; font-size: 20px;">&#9733;</span> 4.8/5</p>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="cont3">
+        <div class="cont31">
+             <div class="cont31ai">
+                <p><H1  style="margin-left: 20px;">Explore Genres</H1></p>
+            </div>
+            <div class="cont31aii" style="background-color: palegreen;" id="31ai">
+                <img src="https://www.presetpro.com/wp-content/uploads/2020/06/Landscape-Photography-Cinematic-Scene-Presetpro.com_-1024x578.jpg">
+            </div>
+            <div class="cont31aiii" style="background-color: yellow;" id="31aii">
+                <img src="https://cdn2.unrealengine.com/racing-master-img-1-1920x1080-e5d0a6bbc96f.jpg?resize=1&w=1920" alt="" style="background-repeat: no-repeat; background-size: cover; background-position: center 75%;">
+            </div>
+            <div class="cont31aiv" style="background-color: burlywood;" id="31aiii">
+                <img src="https://img.freepik.com/free-photo/man-racing-dirt-bike-fantasy-environment_23-2151500473.jpg?semt=ais_hybrid&w=740&q=80" alt="" style="background-repeat: no-repeat; background-size: cover; background-position: center 75%;">
+            </div>
+        </div>
+        <div class="cont32">
+
+        </div>
+    </div>
+</body>
+
+
+
+
+
+
+<style>
+
+    .cont1{
+        display: flex;
+        width: 100vw;
+        padding-left:4vw;
+        height: 10vh;
+        color: white;
+        background-color: black;
+    }
+    .viewgames{
+        margin-left: 80vw;
+        font-size: px;
+    }
+    .cont2{
+        width: 100vw;
+        height: 150vh;
+        background-color: black;
+        display: flex;
+        flex-wrap: wrap;
+        padding: 50px;
+        column-gap: 10px;
+    }
+    .cont21{
+        height: 400px;
+        width: 300px;
+        background-color: black;
+        border-radius: 45px;
+        overflow: hidden;
+        transition: transform 0.5s ease-in-out;
+        
+        
+    }
+    .cont21 img{
+        width: 100%;
+        height: 350px;
+        object-fit: cover;
+        transition: transform 0.5s ease-in-out;
+    }
+    .cont21:hover{
+        transform: scale(1.05);
+    }
+    .cont21:hover img{
+        transform: scale(1.2);
+    }
+    .racing{
+        position: absolute;
+        z-index: ;
+        margin-left: -20vw;
+        margin-top: 2vh;
+        padding: 10px 20px;
+  background-color: inherit; 
+  border: none;
+  
+  border-radius: 5px;
+  font-weight: bold;
+  cursor: pointer;
+  color: white;
+    }
+    .cont31aii, .cont31aiii, .cont3aiv{
+        transition: transform 0.5s ease-in-out;
+    }
+    .cont31aii:hover{
+        transform: scale(1.05);
+    }
+    .cont31aiii:hover{
+        transform: scale(1.05);
+    }
+    .cont31aiv:hover{
+        transform: scale(1.05);
+    }
+    .write{
+     position: relative;
+     bottom: ;
+     display: block;
+     margin-top: -40px;
+     width: 400px;
+     height: 150px;
+     background-color: black;
+     color: white;
+     z-index: 2;
+     overflow: hidden;
+     
+     
+     
+    }
+    p{
+        font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+    }
+    .cont3{
+        background-color: black;
+        width: 100vw;
+        height: 180vh;
+        padding: 20px;
+        display: flex;
+        
+    }
+    .cont31{
+        display: grid;
+        column-gap: 20px;
+        row-gap: 20px;
+        border-radius: 30px;
+    }
+    .cont31ai{
+        background-color: black;
+        width: 50vw;
+        height: 20vh;
+        border-radius: 30px;
+        color: white;
+    }
+    .cont31aii{
+        width: 70vw;
+        height: 50vh;
+        border-radius: 30px;
+        overflow: hidden;
+    }
+   .cont31aii, img{
+        background-position: center 75%;
+        background-size: contain;
+        background-repeat: no-repeat;
+    }
+    .cont31aiii{
+        width: 70vw;
+        height: 50vh;
+        border-radius: 30px;
+        overflow: hidden;
+    }
+    .cont31aiv{
+        width: 70vw;
+        height: 50vh;
+        border-radius: 30px;
+        overflow: hidden;
+    }
+    .cont32{
+        width: 20vw;
+        height: 150vh ;
+        background-color: silver;
+        margin-left: 30px;
+        border-radius: 30px;
+    }
+    
+    
+</style>
+  
+<style>
+    @media screen and (orientation: portrait) {
+        .cont2{
+            margin-bottom: 220vh;
+        }
+        .cont3{
+            display: block;
+        }
+        .cont31aii, .cont31aiii, .cont31aiv {
+            width: 85vw;
+            
+            
+        }
+        .cont31aii img{
+            width: 150vw;
+            height: 50vh;
+            
+        }
+        .cont31aiii img{
+            width: 150vw;
+            height: 50vh;
+            
+        }
+        .cont31aiv img{
+            width: 150vw;
+            height: 50vh;
+            
+            
+        }
+        .cont31ai{
+            margin-top: 10vh;
+        }
+        .cont32{
+            width: 70vw;
+            margin-top: 10vh;
+        }
+        .racing{
+            position: absolute;
+            margin-right: 20vw;
+        }
+    }
+    
+</style>
